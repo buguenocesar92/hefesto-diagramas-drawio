@@ -1,0 +1,25 @@
+name: hefesto-diagramas
+services:
+  app:
+    image: jgraph/drawio:32.4.1@sha256:1fc183e15611c35ced75a0e990258a46991b70bea250b18385da5d9cdc934262
+    restart: unless-stopped
+    environment:
+      DRAWIO_LANG: es
+      DRAWIO_CONFIG: '{"enableAi":false}'
+    expose: ["8080"]
+    networks: [backend]
+    security_opt: [no-new-privileges:true]
+  gateway:
+    image: caddy:2-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    restart: unless-stopped
+    entrypoint: [sh, /opt/hefesto/start.sh]
+    depends_on: [app]
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:?Configurar usuario}
+      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH:?Configurar bcrypt}
+    expose: ["8080"]
+    networks: [default, backend]
+    volumes: [./ops:/opt/hefesto:ro]
+networks:
+  backend:
+    internal: true

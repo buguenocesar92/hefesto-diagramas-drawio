@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="Hefesto" version="32.4.1">
+  <diagram id="02-entrega-cliente" name="Entrega de proyecto">
+    <mxGraphModel grid="1" gridSize="10" page="1" pageWidth="827" pageHeight="1169">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Entrega de proyecto" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f1ff;strokeColor=#3165a8;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="170" y="40" width="460" height="70" />
+        </mxCell>
+        <mxCell id="n0" value="Solicitud" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f1ff;strokeColor=#3165a8;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="170" y="200" width="460" height="70" />
+        </mxCell>
+        <mxCell id="n1" value="Diagnóstico" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f1ff;strokeColor=#3165a8;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="170" y="330" width="460" height="70" />
+        </mxCell>
+        <mxCell id="n2" value="Alcance aprobado" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f1ff;strokeColor=#3165a8;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="170" y="460" width="460" height="70" />
+        </mxCell>
+        <mxCell id="n3" value="Implementación" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f1ff;strokeColor=#3165a8;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="170" y="590" width="460" height="70" />
+        </mxCell>
+        <mxCell id="n4" value="Prueba con cliente" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f1ff;strokeColor=#3165a8;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="170" y="720" width="460" height="70" />
+        </mxCell>
+        <mxCell id="n5" value="Entrega y soporte" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f1ff;strokeColor=#3165a8;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry as="geometry" x="170" y="850" width="460" height="70" />
+        </mxCell>
+        <mxCell id="e0" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;strokeColor=#3165a8;" edge="1" parent="1" source="n0" target="n1">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;strokeColor=#3165a8;" edge="1" parent="1" source="n1" target="n2">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;strokeColor=#3165a8;" edge="1" parent="1" source="n2" target="n3">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;strokeColor=#3165a8;" edge="1" parent="1" source="n3" target="n4">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=block;strokeColor=#3165a8;" edge="1" parent="1" source="n4" target="n5">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

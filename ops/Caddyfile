@@ -1,0 +1,26 @@
+{
+    admin off
+    auto_https off
+    persist_config off
+}
+:8080 {
+    basic_auth {
+        {$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+    }
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+        Cache-Control "no-store"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        -Server
+    }
+    @entry path /
+    route {
+        rewrite @entry /?offline=1&lang=es
+    }
+    encode zstd gzip
+    reverse_proxy app:8080 {
+        header_up -Authorization
+    }
+}
