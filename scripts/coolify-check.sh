@@ -10,7 +10,7 @@ BASE_DIR="$ROOT"
 
 TMP_ENV="$(mktemp -t coolify-check-env.XXXXXX)"
 RENDER="$(mktemp -t coolify-check-render.XXXXXX)"
-trap 'rm -f "$TMP_ENV" "$RENDER"' EXIT
+trap 'rm -f "$TMP_ENV" "$RENDER" "$RENDER.stderr"' EXIT
 
 # 1. Generar .env temporal con valores ficticios no secretos para cada ${VAR}
 #    del compose. Para BASIC_AUTH_HASH se usa un hash bcrypt valido con $$
@@ -35,9 +35,14 @@ for v in $VARS; do
     esac
 done
 
-# 2. Renderizar el compose. Debe terminar sin error.
-if ! docker compose --project-directory "$BASE_DIR" -f "$COMPOSE_FILE" \
-        --env-file "$TMP_ENV" config --format json > "$RENDER" 2> "$RENDER.stderr"; then
+# 2. Renderizar el compose con un nombre de proyecto unico. Asi, cualquier
+#    `name:` que el compose fuente declare en la raiz, en una red o en un
+#    volumen aparece tal cual en el render y no se confunde con un nombre
+#    generado a partir del directorio del proyecto.
+PROJECT_NAME="coolifycheck$$"
+if ! docker compose -p "$PROJECT_NAME" --project-directory "$BASE_DIR" \
+        -f "$COMPOSE_FILE" --env-file "$TMP_ENV" \
+        config --format json > "$RENDER" 2> "$RENDER.stderr"; then
     echo "compose: fallo al renderizar"
     cat "$RENDER.stderr" >&2
     exit 1
@@ -45,34 +50,31 @@ fi
 
 ERR=0
 
-# Punto 2: raiz sin name fijo. Si la raiz trae 'name' debe coincidir con el
-# nombre del directorio del proyecto; cualquier otro valor viene del compose
-# fuente y bloquea que Coolify defina el nombre.
-PROJECT_DIR_NAME=$(basename "$BASE_DIR")
-ACTUAL_NAME=$(jq -r '.name // empty' "$RENDER")
-if [ -n "$ACTUAL_NAME" ] && [ "$ACTUAL_NAME" != "$PROJECT_DIR_NAME" ]; then
-    echo "compose: name raiz fijo ($ACTUAL_NAME) - Coolify pone el nombre de proyecto (esperado implicito: $PROJECT_DIR_NAME) (punto 2)"
+# Punto 2 (raiz): el compose fuente no debe traer `name:` fijo; Coolify
+# asigna el nombre del proyecto.
+if grep -qE '^name:' "$COMPOSE_FILE"; then
+    echo "compose: name raiz fijo (punto 2)"
     ERR=1
 fi
 
-# Redes top-level sin name fijo. Los nombres auto-generados siguen
-# <proyecto>_<clave>; cualquier otra cosa viene del compose fuente.
+# Punto 2 (redes): los nombres auto-generados siguen `<proyecto>_<clave>`;
+# cualquier otra cosa viene de un `name:` fijo en el compose fuente.
 NETWORK_KEYS=$(jq -r '.networks // {} | keys[]' "$RENDER" 2>/dev/null || true)
 for net in $NETWORK_KEYS; do
-    EXPECTED_NET="${ACTUAL_NAME:-${PROJECT_DIR_NAME}}_${net}"
+    EXPECTED_NET="${PROJECT_NAME}_${net}"
     NET_NAME=$(jq -r ".networks[\"$net\"].name // empty" "$RENDER")
-    if [ -n "$NET_NAME" ] && [ "$NET_NAME" != "$EXPECTED_NET" ]; then
+    if [ "$NET_NAME" != "$EXPECTED_NET" ]; then
         echo "compose: red '$net' tiene name fijo '$NET_NAME' (esperado: $EXPECTED_NET) (punto 2)"
         ERR=1
     fi
 done
 
-# Volumenes top-level sin name fijo (misma logica).
+# Punto 2 (volumenes): misma regla.
 VOL_KEYS=$(jq -r '.volumes // {} | keys[]' "$RENDER" 2>/dev/null || true)
 for vol in $VOL_KEYS; do
-    EXPECTED_VOL="${ACTUAL_NAME:-${PROJECT_DIR_NAME}}_${vol}"
+    EXPECTED_VOL="${PROJECT_NAME}_${vol}"
     VOL_NAME=$(jq -r ".volumes[\"$vol\"].name // empty" "$RENDER")
-    if [ -n "$VOL_NAME" ] && [ "$VOL_NAME" != "$EXPECTED_VOL" ]; then
+    if [ "$VOL_NAME" != "$EXPECTED_VOL" ]; then
         echo "compose: volumen '$vol' tiene name fijo '$VOL_NAME' (esperado: $EXPECTED_VOL) (punto 2)"
         ERR=1
     fi
@@ -103,7 +105,7 @@ for svc in $SERVICES; do
 
     # 1c. security_opt con unconfined.
     SEC=$(jq -r ".services[\"$svc\"].security_opt // [] | .[]" "$RENDER" 2>/dev/null || true)
-    if printf '%s\n' "$SEC" | grep -qx 'unconfined'; then
+    if printf '%s\n' "$SEC" | grep -q 'unconfined'; then
         echo "$svc: security_opt unconfined (punto 1)"
         ERR=1
     fi
