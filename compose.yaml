@@ -1,4 +1,3 @@
-name: hefesto-diagramas
 services:
   app:
     image: jgraph/drawio:32.4.1@sha256:1fc183e15611c35ced75a0e990258a46991b70bea250b18385da5d9cdc934262
@@ -20,6 +19,11 @@ services:
     expose: ["8080"]
     networks: [default, backend]
     volumes: [./ops:/opt/hefesto:ro]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8080 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 networks:
   backend:
     internal: true

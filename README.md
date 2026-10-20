@@ -32,7 +32,35 @@ docker compose -f compose.yaml -f compose.bootstrap.yaml up -d
 ## Publicar en Coolify
 Importar esta carpeta mediante un repositorio privado como recurso Docker Compose. Usar exclusivamente `compose.yaml` y mantener `ops/` en el checkout; el gateway necesita ese montaje. Introducir BASIC_AUTH_USER y BASIC_AUTH_HASH como variables del recurso: el hash literal sin comillas envolventes en el formulario. No exponer app ni publicar 8080/8443 directamente.
 
+El hash bcrypt contiene caracteres `$` que Coolify interpreta como variable de Compose; en el formulario del recurso marcar `BASIC_AUTH_HASH` como **literal** (toggle «Value is a literal / No variable interpolation») o duplicar cada `$` como `$$` al pegarlo. El hash tiene la forma `$2[aby]$(coste)$<base64>`, con coste 08 a 16; el `ops/start.sh` del contenedor rechaza cualquier valor que no cumpla esa forma.
+
 Asignar un subdominio HTTPS únicamente al servicio **gateway**, puerto **8080**. TLS termina en Coolify; Caddy recibe tráfico interno HTTP. No usar una subruta. El servicio app permanece en la red interna. No copiar el override bootstrap al despliegue público. Confirmar desde fuera que sin contraseña se obtiene 401 y que no existe acceso directo a app. Para checks HTTP de Coolify, no configurar un chequeo anónimo que exija 200: Basic Auth devuelve 401; revisar salud autenticada sin escribir secretos en logs.
+
+## Despliegue en Coolify (MVP Hefesto)
+
+Importar esta carpeta como recurso **Docker Compose** apuntando a `compose.yaml`; Coolify detecta el servicio `gateway` y le asigna el subdominio. Mantener `ops/` en el checkout: el gateway lo monta como volumen de solo lectura.
+
+**Variables obligatorias del recurso**
+
+- `BASIC_AUTH_USER`: usuario de 3–48 caracteres alfanuméricos, guion o guion bajo; lo valida `ops/start.sh`.
+- `BASIC_AUTH_HASH`: hash bcrypt. Coolify interpreta los `$` del hash como variable de Compose, así que en el formulario del recurso marcar `BASIC_AUTH_HASH` como **literal** (toggle «Value is a literal / No variable interpolation») o duplicar cada `$` como `$$` al pegarlo. La forma esperada es `$2[aby]$(coste)$<base64>` con coste 08 a 16; cualquier valor que no cumpla eso es rechazado por `ops/start.sh`.
+
+**Servicio y healthcheck**
+
+Coolify debe enrutar el subdominio al servicio `gateway` en el puerto **`8080`** (TLS termina en Coolify/Traefik; Caddy recibe HTTP interno). El gateway lleva `healthcheck` propio que no usa credenciales:
+
+```yaml
+healthcheck:
+  test: ["CMD-SHELL", "nc -z 127.0.0.1 8080 || exit 1"]
+  interval: 30s
+  timeout: 5s
+  retries: 3
+```
+
+Un chequeo HTTP anónimo no sirve: Basic Auth responde `401` aunque el servicio este sano. La imagen `caddy:2-alpine` trae busybox con `nc`, por eso se chequea el puerto en vez del código HTTP. El servicio `app` permanece en la red interna y no se publica.
+
+### Verificacion del contrato Coolify
+Tras cualquier cambio en `compose.yaml`, ejecutar `bash scripts/coolify-check.sh` desde la raiz del repositorio. El script genera un `.env` temporal con valores ficticios, renderiza el compose con un nombre de proyecto unico y valida los puntos 1 y 2 del contrato (sin `ports`, `container_name`, `network_mode: host`, `docker.sock`, `security_opt` con `unconfined`, ni `name:` fijos en la raiz, redes o volumenes). Termina con `OK: compose cumple contrato Coolify` y exit 0 si todo esta en orden.
 
 ## Datos y límites
 Los documentos viven donde el usuario los guarde: dispositivo o almacenamiento del navegador. Este kit NO proporciona repositorio central, colaboración en tiempo real, usuarios individuales, roles o MFA. Basic Auth es una barrera compartida y el navegador puede recordar la sesión; no hay botón de cierre de sesión fiable. Crear una instancia por cliente si necesitan credenciales separadas.
